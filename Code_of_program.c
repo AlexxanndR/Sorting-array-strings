@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <locale.h>
+#include <stdbool.h>
 
-void cmp_sort(char**, int, int);
-
+void cmp_to_sort(char**, int, int);
 void InsertSort(char**, int, int);
+int atoi_sum(char*, int);
 
 int main()
 {
@@ -75,13 +76,16 @@ int main()
 		break;
 	}
 
-	cmp_sort(str, n, m);
+	cmp_to_sort(str, n, m);
 	puts("Sorted text - \n");
 	for (int i = 0; i < n; i++)
 	{	
 	    printf_s("%s \n", *(str + i));
 	}
-
+	for (int i = 0; i < n; i++)
+	{
+		printf_s("Total salary on line №%d - %d \n", i + 1, atoi_sum(*(str + i), m));
+	}
 	
 	
 	/*for (int i = 0; i < n; i++)
@@ -94,7 +98,7 @@ int main()
 
 	return 0;
 }
-//функция сортировки строки
+
 void InsertSort(char** st, int j1, int i1)
 {
 	int i, j, temp;
@@ -108,7 +112,7 @@ void InsertSort(char** st, int j1, int i1)
 
 			*(st + j-- + 1) = *(st + j);
 			j1 = 0;                     //устанавливаем j в начало строки для нового прохода по их элементам
-			while (j >= 0 && i && *(*(st + j) + j1) == *(*(st + i - 1) + j1))  //цикл поиска одинаковых элементов в строках
+			while (j >= 0 && *(*(st + j) + j1) == *(*(st + i - 1) + j1))  //цикл поиска одинаковых элементов в строках
 			{
 				j1++;
 			}
@@ -117,7 +121,7 @@ void InsertSort(char** st, int j1, int i1)
 	}
 }
 
-void cmp_sort(char** st, int s_str, int s_stl)
+void cmp_to_sort(char** st, int s_str, int s_stl)
 {
 	for (int i = 0; i < s_str - 1; i++)
 	{
@@ -134,4 +138,34 @@ void cmp_sort(char** st, int s_str, int s_stl)
 			}
 		}
 	}
+}
+
+int atoi_sum(char* st, int s_stl)
+{
+	int i = 0, j, n = 0, sum = 0;
+	bool next = 0;
+	if (*(st + i) == ' ') i++;
+	if (!st) return 0;
+	for (i ; i < s_stl; i++)
+	{
+		next = 0;
+		if (*(st + i) >= 'A' && *(st + i) <= 'z') continue;
+		if (*(st + i) >= 'A' && *(st + i) <= 'я') continue;
+		if (*(st + i) == ' ') continue;
+		if (*(st + i) >= '0' && *(st + i) <= '9')
+		{
+			n = n * 10 + (*(st + i) - '0');
+		}
+		if (*(st + i) == '.') n = 0;      //обнуляем число, если оно обозначает номер месяца
+		if (*(st + i) == ';') next = 1;   //найдено число зарплаты за один из месяцев
+		if (next)
+		{
+			sum += n;
+			n = 0;
+		}
+		if (*(st + i) == '\0') break;
+	}
+
+	return sum;
+	
 }
