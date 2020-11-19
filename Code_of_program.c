@@ -6,12 +6,14 @@
 void cmp_to_sort(char**, int, int);
 void InsertSort(char**, int, int);
 int atoi_sum(char*, int);
+void SheikerSort(int*, char**, int);
 
 int main()
 {
 	setlocale(LC_ALL, "Russian");
-	int n, m, var;
+	int n, m, num = 0, var;
 	char** str = 0;
+	int* ms = 0;
 	do
 	{
 		system("CLS");
@@ -53,6 +55,7 @@ int main()
 	printf_s("Select: \n");
 	printf_s("1. Take a ready - made string; \n");
 	printf_s("2. Write yourself; \n");
+	printf_s("Write your choice: ");
 	scanf_s("%d", &var);
 	switch (var)
 	{
@@ -63,6 +66,7 @@ int main()
 		printf_s("%s \n", *(str + 0));
 		printf_s("%s \n", *(str + 1));
 		printf_s("%s \n", *(str + 2));
+		printf_s("\n");
 		break;
 	case 2:
 		rewind(stdin);
@@ -70,6 +74,7 @@ int main()
 		{
 			printf_s("Sentence # %d: ", i);
 			fgets(*(str + i), m, stdin);
+			printf_s("\n");
 		}
 		break;
 	default: printf_s("Error");
@@ -77,24 +82,32 @@ int main()
 	}
 
 	cmp_to_sort(str, n, m);
-	puts("Sorted text - \n");
+	puts("Sorted text by alphabet - \n");
 	for (int i = 0; i < n; i++)
 	{	
 	    printf_s("%s \n", *(str + i));
 	}
+	printf_s("\n");
 	for (int i = 0; i < n; i++)
 	{
 		printf_s("Total salary on line №%d - %d \n", i + 1, atoi_sum(*(str + i), m));
+		num++;                   //счётчик количества сумм зарплат для выделения памяти под массив
 	}
-	
-	
-	/*for (int i = 0; i < n; i++)
+	printf_s("\n");
+	ms = (int*)malloc(num * sizeof(int));   //выделение памяти пол дополнительный массив
+	//цикл заполнения массива
+	for (int i = 0; i < n; i++)       
 	{
-		printf_s("Sentence # %d: ", i);
-		gets(*(str + i));
+		*(ms + i) = atoi_sum(*(str + i), m);
 	}
-	*/
 	
+	SheikerSort(ms, str, num);
+	printf_s("Sorted text by salary - \n");
+	printf_s("\n");
+	for (int i = 0; i < n; i++)
+	{
+		printf_s("Line with total salary %d - %s \n", atoi_sum(*(str + i), m), *(str + i));
+	}
 
 	return 0;
 }
@@ -143,13 +156,14 @@ void cmp_to_sort(char** st, int s_str, int s_stl)
 int atoi_sum(char* st, int s_stl)
 {
 	int i = 0, j, n = 0, sum = 0;
-	bool next = 0;
+	int numl = 0;
+	bool next = 0;                              //флаг прохола в массиве зарплаты за один месяца
 	if (*(st + i) == ' ') i++;
-	if (!st) return 0;
+	if (!st) return 0;                          //прерываем работу функции (строка содержит только пробелы)
 	for (i ; i < s_stl; i++)
 	{
 		next = 0;
-		if (*(st + i) >= 'A' && *(st + i) <= 'z') continue;
+		if (*(st + i) >= 'A' && *(st + i) <= 'z') continue; 
 		if (*(st + i) >= 'A' && *(st + i) <= 'я') continue;
 		if (*(st + i) == ' ') continue;
 		if (*(st + i) >= '0' && *(st + i) <= '9')
@@ -161,11 +175,52 @@ int atoi_sum(char* st, int s_stl)
 		if (next)
 		{
 			sum += n;
-			n = 0;
+			n = 0;                        //обнуление зарплаты для суммирования с зарплатой за другой месяц
 		}
-		if (*(st + i) == '\0') break;
+		if (*(st + i) == '\0') break;     //прекращаем цикл, если достигнут нулевой цикл
 	}
 
 	return sum;
 	
+}
+//цикл сортировки строк строкового массива по сумме зарплат
+void SheikerSort(int* arr, char** st, int kol)
+{
+	int left = 0, right = kol - 1, temp;
+	int flag = 1;                     //флаг наличия перемещений
+	while ((left < right) && flag)
+	{
+		flag = 0;
+		for (int i = left; i < right; i++)
+		{
+			if (*(arr + i) > *(arr + i + 1))
+			{
+				temp = *(arr + i);
+				*(arr + i) = *(arr + i + 1);
+				*(arr + i + 1) = temp;
+
+				temp = *(st + i);
+				*(st + i) = *(st + i + 1);
+				*(st + i + 1) = temp;
+
+				flag = 1;	
+			}
+		}
+		right--;
+		for (int i = right; i > left; i--)
+		{
+			if (*(arr + i - 1) > *(arr + i))
+			{
+				temp = *(arr + i);
+				*(arr + i) = *(arr + i - 1);
+				*(arr + i - 1) = temp;
+
+				temp = *(st + i);
+				*(st + i) = *(st + i - 1);
+				*(st + i - 1) = temp;
+			}
+		}
+		left--;
+	}
+
 }
