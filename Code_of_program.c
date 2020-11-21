@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <locale.h>
 #include <stdbool.h>
+#include <string.h>
 
 void cmp_to_sort(char**, int, int);
 void InsertSort(char**, int, int);
@@ -13,6 +14,7 @@ int main()
 	setlocale(LC_ALL, "Russian");
 	int n, m, num = 0, var;
 	char** str = 0;
+	char** str1 = 0;                 //указатель на указатель для отладки программы
 	int* ms = 0;
 	do
 	{
@@ -23,13 +25,13 @@ int main()
 			rewind(stdin);
 			continue;
 		}
-		printf_s("Enter the dimension of the sentence: ");
+		printf_s("Allocate memory for the sentence: ");
 		if (!(scanf_s("%d", &m)))
 		{
 			rewind(stdin);
 			continue;
 		}
-		str = (char**)malloc(n * sizeof(char*));            //выделяем память под массив указателей (строки текста)
+		str = (char**)calloc(n, sizeof(char*));            //выделяем память под массив указателей (строки текста)
 		if (!str)
 		{
 			continue;
@@ -49,7 +51,27 @@ int main()
 				break;
 			}
 		}
-	} while (!str);
+		str1 = (char**)calloc(n, sizeof(char*));            //выделяем память под дополнительный массив указателей для отладки
+		if (!str1)
+		{
+			continue;
+		}
+		for (int i = 0; i < n; i++)
+		{
+			*(str1 + i) = (char*)malloc(m * sizeof(char));   //выделяем память под предложения текста
+			if (!(*(str1 + i)))
+			{
+				for (int j = 0; j < i; j++)
+				{
+					printf_s("Reduce the line size");
+					free(*(str1 + j));
+				}
+				free(str1);
+				str1 = 0;
+				break;
+			}
+		}
+	} while (!str && !str1);
 
 	rewind(stdin);                         //чистка буфера ввода (чтобы не было нажатия ENTER)
 	printf_s("Select: \n");
@@ -67,6 +89,11 @@ int main()
 		printf_s("%s \n", *(str + 1));
 		printf_s("%s \n", *(str + 2));
 		printf_s("\n");
+		for (int i = 0; i < n; i++)
+		{
+			if (*(str + i) == 0) break;
+			strcpy_s(*(str1 + i), m, *(str + i));       //отладка программы
+		}
 		break;
 	case 2:
 		rewind(stdin);
@@ -81,34 +108,44 @@ int main()
 		break;
 	}
 
-	cmp_to_sort(str, n, m);
+	cmp_to_sort(str1, n, m);
 	puts("Sorted text by alphabet - \n");
 	for (int i = 0; i < n; i++)
 	{	
-	    printf_s("%s \n", *(str + i));
+	    printf_s("%s \n", *(str1 + i));
 	}
 	printf_s("\n");
 	for (int i = 0; i < n; i++)
 	{
-		printf_s("Total salary on line №%d - %d \n", i + 1, atoi_sum(*(str + i), m));
+		printf_s("Total salary on line №%d - %d \n", i + 1, atoi_sum(*(str1 + i), m));
 		num++;                   //счётчик количества сумм зарплат для выделения памяти под массив
 	}
 	printf_s("\n");
 	ms = (int*)malloc(num * sizeof(int));   //выделение памяти пол дополнительный массив
-	//цикл заполнения массива
-	for (int i = 0; i < n; i++)       
+	if (!ms)                                //проверка выделения памяти
 	{
-		*(ms + i) = atoi_sum(*(str + i), m);
+		puts("Memory is not alocated.");
+		return 1;
+	}
+	//цикл заполнения массива
+	for (int i = 0; i < n; i++)
+	{
+		*(ms + i) = atoi_sum(*(str1 + i), m);
 	}
 	
-	SheikerSort(ms, str, num);
+	SheikerSort(ms, str1, num);
 	printf_s("Sorted text by salary - \n");
 	printf_s("\n");
 	for (int i = 0; i < n; i++)
 	{
-		printf_s("Line with total salary %d - %s \n", atoi_sum(*(str + i), m), *(str + i));
+		printf_s("Line with total salary %d - %s \n", atoi_sum(*(str1 + i), m), *(str1 + i));
 	}
 
+	for (int i = 0; i < n; i++)
+	{
+		free(*(str1 + i));
+	}
+	free(str1);
 	return 0;
 }
 
@@ -155,7 +192,7 @@ void cmp_to_sort(char** st, int s_str, int s_stl)
 
 int atoi_sum(char* st, int s_stl)
 {
-	int i = 0, j, n = 0, sum = 0;
+	int i = 0, n = 0, sum = 0;
 	int numl = 0;
 	bool next = 0;                              //флаг прохола в массиве зарплаты за один месяца
 	if (*(st + i) == ' ') i++;
