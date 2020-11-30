@@ -2,19 +2,22 @@
 #include <stdlib.h>
 #include <locale.h>
 #include <stdbool.h>
-#include <string.h>
+#include <windows.h>
 
 void cmp_to_sort(char**, int, int);
 void InsertSort(char**, int, int);
-int atoi_sum(char*, int);
+int  atoi_sum(char*, int);
 void SheikerSort(int*, char**, int);
+char* str_cpy(char*, char*);
 
 int main()
 {
 	setlocale(LC_ALL, "Russian");
-	int n, m, num = 0, var;
-	char** str = 0;
-	char** str1 = 0;                 //указатель на указатель для отладки программы
+	SetConsoleCP(1251);
+	SetConsoleOutputCP(1251);
+	int n, m, num = 0, var, kol = 0;
+	char** str_old = 0;
+	char** str_new = 0;                 //указатель на указатель для отладки программы
 	int* ms = 0;
 	do
 	{
@@ -31,94 +34,110 @@ int main()
 			rewind(stdin);
 			continue;
 		}
-		str = (char**)calloc(n, sizeof(char*));            //выделяем память под массив указателей (строки текста)
-		if (!str)
+		str_old = (char**)calloc(n, sizeof(char*));            //выделяем память под массив указателей (строки текста)
+		if (!str_old)
+		{
+			free(str_old);
+			continue;
+		}
+		for (int i = 0; i < n; i++)
+		{
+			*(str_old + i) = (char*)malloc(m * sizeof(char));   //выделяем память под предложения текста
+			if (!(*(str_old + i)))
+			{
+				for (int j = 0; j < i; j++)
+				{
+					printf_s("Reduce the line size");
+					free(*(str_old + j));
+				}
+				free(str_old);
+				str_old = 0;
+				break;
+			}
+		}
+		str_new = (char**)calloc(n, sizeof(char*));            //выделяем память под дополнительный массив указателей для отладки
+		if (!str_new)
 		{
 			continue;
 		}
 		for (int i = 0; i < n; i++)
 		{
-			*(str + i) = (char*)malloc(m * sizeof(char));   //выделяем память под предложения текста
-			if (!(*(str + i)))
+			*(str_new + i) = (char*)malloc(m * sizeof(char));   //выделяем память под предложения текста
+			if (!(*(str_new + i)))
 			{
 				for (int j = 0; j < i; j++)
 				{
 					printf_s("Reduce the line size");
-					free(*(str + j));
+					free(*(str_new + j));
 				}
-				free(str);
-				str = 0;
+				free(str_new);
+				str_new = 0;
 				break;
 			}
 		}
-		str1 = (char**)calloc(n, sizeof(char*));            //выделяем память под дополнительный массив указателей для отладки
-		if (!str1)
-		{
-			continue;
-		}
-		for (int i = 0; i < n; i++)
-		{
-			*(str1 + i) = (char*)malloc(m * sizeof(char));   //выделяем память под предложения текста
-			if (!(*(str1 + i)))
-			{
-				for (int j = 0; j < i; j++)
-				{
-					printf_s("Reduce the line size");
-					free(*(str1 + j));
-				}
-				free(str1);
-				str1 = 0;
-				break;
-			}
-		}
-	} while (!str && !str1);
+	} while (!str_old && !str_new);
 
 	rewind(stdin);                         //чистка буфера ввода (чтобы не было нажатия ENTER)
-	printf_s("Select: \n");
-	printf_s("1. Take a ready - made string; \n");
-	printf_s("2. Write yourself; \n");
-	printf_s("Write your choice: ");
-	scanf_s("%d", &var);
-	switch (var)
+
+
+	for (int i = 0; i < n; i++)
 	{
-	case 1:
-		*(str + 0) = "Ю.А. Алексов, 1. 10; 2. 11; 3. 12; 4. 13; 5. 14; 6. 20; 7. 30; 8. 41; 9. 42; 10. 32;";
-		*(str + 1) = "К.Л. Иванов, 1. 11; 2. 15; 3. 17; 4. 20; 5. 41; 6. 52; 7. 36; 8. 49; 9. 48; 10. 37;";
-		*(str + 2) = "В.К. Попов, 1. 9; 2. 8; 3. 7; 4. 60; 5. 40; 6. 50; 7. 70; 8. 80; 9. 42; 10. 32;";
-		printf_s("%s \n", *(str + 0));
-		printf_s("%s \n", *(str + 1));
-		printf_s("%s \n", *(str + 2));
-		printf_s("\n");
-		for (int i = 0; i < n; i++)
+		if (kol > 20 && i == 1)
 		{
-			if (*(str + i) == 0) break;
-			strcpy_s(*(str1 + i), m, *(str + i));       //отладка программы
-		}
-		break;
-	case 2:
-		rewind(stdin);
-		for (int i = 0; i < n; i++)
-		{
-			printf_s("Sentence # %d: ", i);
-			fgets(*(str + i), m, stdin);
 			printf_s("\n");
+			puts("The number of months must be no more than 20. \n");
+			rewind(stdin);
+			i = 0;
 		}
-		break;
-	default: printf_s("Error");
-		break;
+		printf_s("Enter the string #%d: ", i + 1);
+		kol = get_str(*(str_old + i), m);
+		if (kol > 20 && i > 0)
+		{
+			printf_s("\n");
+			puts("The number of months must be no more than 20 \n");
+			rewind(stdin);
+			i--;
+		}
 	}
 
-	cmp_to_sort(str1, n, m);
+	//for (int i = 0; i < n; i++)
+	//{
+	//	printf_s("Sentence # %d: ", i + 1);
+	//	fgets(*(str_old + i), m, stdin);
+
+	//	for (int j = 0; j < m; j++)
+	//	{
+	//		if (*(*(str_old + i) + j) == '.') kol++;
+	//		if (kol > 20 && i == 0)
+	//		{
+	//			rewind(stdin);
+	//			i = 0;
+	//			break;
+	//		}
+	//	    if (kol > 20 && i > 0)
+	//		{
+	//			rewind(stdin);
+	//			i--;
+	//			break;
+	//		}
+	//	}
+	//}
+	printf_s("\n");
+
+
+
+	cmp_to_sort(str_old, n, m);
 	puts("Sorted text by alphabet - \n");
 	for (int i = 0; i < n; i++)
 	{	
-	    printf_s("%s \n", *(str1 + i));
+	    printf_s("%s \n", *(str_old + i));
 	}
 	printf_s("\n");
 	for (int i = 0; i < n; i++)
 	{
-		printf_s("Total salary on line №%d - %d \n", i + 1, atoi_sum(*(str1 + i), m));
-		num++;                   //счётчик количества сумм зарплат для выделения памяти под массив
+		if (*(str_old + i) == 0) break;
+		printf_s("Total salary on line №%d - %d \n", i + 1, atoi_sum(*(str_old + i), m));
+		num++;                               //счётчик количества сумм зарплат для выделения памяти под массив
 	}
 	printf_s("\n");
 	ms = (int*)malloc(num * sizeof(int));   //выделение памяти пол дополнительный массив
@@ -130,23 +149,44 @@ int main()
 	//цикл заполнения массива
 	for (int i = 0; i < n; i++)
 	{
-		*(ms + i) = atoi_sum(*(str1 + i), m);
+		if (*(str_old + i) == 0) break;
+		*(ms + i) = atoi_sum(*(str_old + i), m);
 	}
 	
-	SheikerSort(ms, str1, num);
+	SheikerSort(ms, str_old, num);
 	printf_s("Sorted text by salary - \n");
 	printf_s("\n");
 	for (int i = 0; i < n; i++)
 	{
-		printf_s("Line with total salary %d - %s \n", atoi_sum(*(str1 + i), m), *(str1 + i));
+		printf_s("Line with total salary %d - %s \n", atoi_sum(*(str_old + i), m), *(str_old + i));
 	}
 
 	for (int i = 0; i < n; i++)
 	{
-		free(*(str1 + i));
+		free(*(str_old + i));
 	}
-	free(str1);
+	free(str_old);
 	return 0;
+}
+
+int get_str(char* st, int num)
+{
+	char c = 0;
+	int i = 0, kol = 0;
+	while (--num > 0 && (c = getchar()) != EOF && c != '\n')
+	{
+		*(st + i++) = c;
+		if (c == '.') kol++;
+	}
+	*(st + i) = '\0';
+	return kol; 
+}
+
+char* str_cpy(char* st_new, char* st_old)
+{
+	while ((*st_new++ = *st_old++) != '\0');
+
+	return st_new;
 }
 
 void InsertSort(char** st, int j1, int i1)
@@ -195,9 +235,9 @@ int atoi_sum(char* st, int s_stl)
 	int i = 0, n = 0, sum = 0;
 	int numl = 0;
 	bool next = 0;                              //флаг прохола в массиве зарплаты за один месяца
-	if (*(st + i) == ' ') i++;
+	while (*(st + i) == ' ') i++;
 	if (!st) return 0;                          //прерываем работу функции (строка содержит только пробелы)
-	for (i ; i < s_stl; i++)
+	for (i = 0 ; i < s_stl; i++)
 	{
 		next = 0;
 		if (*(st + i) >= 'A' && *(st + i) <= 'z') continue; 
@@ -214,7 +254,7 @@ int atoi_sum(char* st, int s_stl)
 			sum += n;
 			n = 0;                        //обнуление зарплаты для суммирования с зарплатой за другой месяц
 		}
-		if (*(st + i) == '\0') break;     //прекращаем цикл, если достигнут нулевой цикл
+		if (*(st + i) == '\0') break;     //прекращаем цикл, если достигнут нулевой символ
 	}
 
 	return sum;
@@ -223,8 +263,9 @@ int atoi_sum(char* st, int s_stl)
 //цикл сортировки строк строкового массива по сумме зарплат
 void SheikerSort(int* arr, char** st, int kol)
 {
-	int left = 0, right = kol - 1, temp;
-	int flag = 1;                     //флаг наличия перемещений
+	int left = 0, right = kol - 1, temp_dg;
+	char* temp_str;
+	int flag = 1;                         //флаг наличия перемещений
 	while ((left < right) && flag)
 	{
 		flag = 0;
@@ -232,13 +273,13 @@ void SheikerSort(int* arr, char** st, int kol)
 		{
 			if (*(arr + i) > *(arr + i + 1))
 			{
-				temp = *(arr + i);
+				temp_dg = *(arr + i);
 				*(arr + i) = *(arr + i + 1);
-				*(arr + i + 1) = temp;
+				*(arr + i + 1) = temp_dg;
 
-				temp = *(st + i);
+				temp_str = *(st + i);
 				*(st + i) = *(st + i + 1);
-				*(st + i + 1) = temp;
+				*(st + i + 1) = temp_str;
 
 				flag = 1;	
 			}
@@ -248,16 +289,17 @@ void SheikerSort(int* arr, char** st, int kol)
 		{
 			if (*(arr + i - 1) > *(arr + i))
 			{
-				temp = *(arr + i);
+				temp_dg = *(arr + i);
 				*(arr + i) = *(arr + i - 1);
-				*(arr + i - 1) = temp;
+				*(arr + i - 1) = temp_dg;
 
-				temp = *(st + i);
+				temp_str = *(st + i);
 				*(st + i) = *(st + i - 1);
-				*(st + i - 1) = temp;
+				*(st + i - 1) = temp_str;
+				flag = 1;
 			}
 		}
-		left--;
+		left++;
 	}
 
 }
