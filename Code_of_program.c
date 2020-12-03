@@ -90,16 +90,16 @@ int main()
 	for (int i = 0; i < n; i++)
 	{
 		printf_s("Total salary on line №%d - %d \n", i + 1, atoi_sum(*(str_old + i), m));
-		num++;                               //счётчик количества сумм зарплат для выделения памяти под массив для сортировки
-	}                                        //по сумме зарплат 
+		num++;                               //счётчик количества сумм зарплат для выделения памяти под массив для сортировки по их сумме
+	}                                        
 	printf_s("\n");
-	ms = (int*)malloc(num * sizeof(int));   //выделение памяти пол дополнительный массив
-	if (!ms)                                //проверка выделения памяти
+	ms = (int*)malloc(num * sizeof(int));    //выделение памяти пол дополнительный массив
+	if (!ms)                                 //проверка выделения памяти
 	{
 		puts("Memory is not alocated.");
 		return 1;
 	}
-	//цикл заполнения массива
+	//цикл заполнения массива суммами зарплат
 	for (int i = 0; i < n; i++)
 	{
 		*(ms + i) = atoi_sum(*(str_old + i), m);
@@ -121,6 +121,7 @@ int main()
 	return 0;
 }
 
+//функ-я посимвольного ввода строк
 int get_str(char* st, int num)
 {
 	char c = 0;
@@ -135,16 +136,30 @@ int get_str(char* st, int num)
 	*(st + i) = '\0';                                                                                  
 	return kol; 
 }
-//функция расстановки сим-ов в строках, если встретились лишние пробелы, чтобы их не сортировать с буквами
-void skipSpace(char** st, char * temp, int j, int i, int* symb, int* lett)
+
+//функция расстановки сим-ов в строках при встрече лишних пробелов, чтобы их не сортировать с буквами,
+//и пропуска повторяющихся символов слов
+void skipSpaceRepeat(char** st, char * temp, int j, int i, int* symb, int* lett)
 {
-	while (*(*(st + j) + *symb) != ' ' && *(temp + (*symb)) == ' ')
+	int for_while;        //переменная для запоминания значения symb
+	while (*(*(st + j) + *lett) != ' ' && *(temp + *symb) == ' ')  //пропуск пробелов
 	{
-		*lett = *symb; (*symb)++;
+		(*symb)++;
 	}
-	while (*(*(st + j) + *symb) == ' ' && *(temp + (*symb)) != ' ')
+	for_while = *symb;    //запоминаем, где находится symb
+	while (*(*(st + j) + *symb) == ' ' && *(temp + *lett) != ' ') 
 	{
-		*lett = *symb; (*symb)++;
+		(*symb)++;
+		if (*(*(st + j) + *symb) != ' ')
+		{
+			*lett = *symb;
+			*symb = for_while;
+			break;
+		}
+	}
+	while (*(*(st + j) + *lett) == *(temp + *symb))              //пропуск одинаковых символов
+	{
+		(*symb)++; (*lett)++;
 	}
 }
 
@@ -157,11 +172,9 @@ void InsertSort(char** st, int s_str, int str_size)
 	{
 		j = i - 1;
 		temp = *(st + i);              //сохраняем указатель на строку
-		while (*(*(st + j) + symb) == *(*(st + i) + symb)) symb++;  //пропуск одинаковых символов
+		skipSpace(st, temp, j, i, &symb, &lett);                              //пропуск пробелов в одной из строк
 		if (*(*(st + j) + symb) >= '0' && *(*(st + j) + symb) <= '9') symb++; //достигнуты цифры в строке
 		if (*(*(st + i) + symb) >= '0' && *(*(st + i) + symb) <= '9') symb++; //достигнуты цифры в другой строке
-		lett = symb;
-		skipSpace(st, temp, j, i, &symb, &lett);   //пропуск пробелов в одной из строк
 		while (j >= 0 && (*(*(st + j) + lett) - *(temp + symb) > 0))
 		{
 			*(st + j-- + 1) = *(st + j);
@@ -169,8 +182,8 @@ void InsertSort(char** st, int s_str, int str_size)
 			while (j >= 0 && *(*(st + j) + lett) == *(temp + symb))     //цикл поиска одинаковых элементов в строках
 			{                                                           //т.к. начинают сравниваються строки, в которых
 				symb++; lett++;                                         //символы под установленным номером, могут быть уже не одинаковыми
-				skipSpace(st, temp, j, i, &symb, &lett);                //пропуск пробелов в одной из строк
 			}
+			if (j >= 0) skipSpace(st, temp, j, i, &symb, &lett);                //пропуск пробелов в одной из строк
 		}
 		*(st + j + 1) = temp; //запись в освободившийся или в тот же элемент
 		symb = 0; lett = 0;
@@ -180,8 +193,7 @@ void InsertSort(char** st, int s_str, int str_size)
 int atoi_sum(char* st, int s_stl)
 {
 	int i = 0, n = 0, sum = 0;
-	int numl = 0;
-	bool next = 0;                              //флаг прохола в массиве зарплаты за один месяца
+	bool next = 0;                              //флаг нахождения в массиве зарплаты за один месяца
 	while (*(st + i) == ' ') i++;
 	if (!st) return 0;                          //прерываем работу функции (строка содержит только пробелы)
 	for (i = 0 ; i < s_stl; i++)
@@ -210,6 +222,7 @@ int atoi_sum(char* st, int s_stl)
 	return sum;
 	
 }
+
 //цикл сортировки строк строкового массива по сумме зарплат
 void SheikerSort(int* arr, char** st, int kol)
 {
@@ -251,5 +264,4 @@ void SheikerSort(int* arr, char** st, int kol)
 		}
 		left++;
 	}
-
 }
