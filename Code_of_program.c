@@ -3,12 +3,12 @@
 #include <locale.h>
 #include <stdbool.h>
 #include <windows.h>
+#include <stdbool.h>
 
-void cmp_to_sort(char**, int, int);
+void skipSpace(char**, char*, int, int, int*, int*);
 void InsertSort(char**, int, int);
 int  atoi_sum(char*, int);
 void SheikerSort(int*, char**, int);
-char* str_cpy(char*, char*);
 
 int main()
 {
@@ -17,7 +17,6 @@ int main()
 	SetConsoleOutputCP(1251);
 	int n, m, num = 0, var, kol = 0;
 	char** str_old = 0;
-	char** str_new = 0;                 //указатель на указатель для отладки программы
 	int* ms = 0;
 	do
 	{
@@ -55,35 +54,14 @@ int main()
 				break;
 			}
 		}
-		str_new = (char**)calloc(n, sizeof(char*));            //выделяем память под дополнительный массив указателей для отладки
-		if (!str_new)
-		{
-			continue;
-		}
-		for (int i = 0; i < n; i++)
-		{
-			*(str_new + i) = (char*)malloc(m * sizeof(char));   //выделяем память под предложения текста
-			if (!(*(str_new + i)))
-			{
-				for (int j = 0; j < i; j++)
-				{
-					printf_s("Reduce the line size");
-					free(*(str_new + j));
-				}
-				free(str_new);
-				str_new = 0;
-				break;
-			}
-		}
-	} while (!str_old && !str_new);
+	} while (!str_old);
 
-	rewind(stdin);                         //чистка буфера ввода (чтобы не было нажатия ENTER)
-
+	rewind(stdin);                         //чистка буфера ввода (чтобы не было учтено на;атие ENTER при вводе строк)
 
 	for (int i = 0; i < n; i++)
 	{
-		if (kol > 20 && i == 1)
-		{
+		if (kol > 20 && i == 1)           //если введена зарплата для более 20 месяцев и было введено 1-ое предложение
+		{                                 //то делаем повторный ввод
 			printf_s("\n");
 			puts("The number of months must be no more than 20. \n");
 			rewind(stdin);
@@ -91,8 +69,8 @@ int main()
 		}
 		printf_s("Enter the string #%d: ", i + 1);
 		kol = get_str(*(str_old + i), m);
-		if (kol > 20 && i > 0)
-		{
+		if (kol > 20 && i > 0)            //если введена зарплата для более 20 месяцев и было введено не 1-ое предложение
+		{                                 //то делаем повторный ввод этого предложения
 			printf_s("\n");
 			puts("The number of months must be no more than 20 \n");
 			rewind(stdin);
@@ -100,33 +78,9 @@ int main()
 		}
 	}
 
-	//for (int i = 0; i < n; i++)
-	//{
-	//	printf_s("Sentence # %d: ", i + 1);
-	//	fgets(*(str_old + i), m, stdin);
-
-	//	for (int j = 0; j < m; j++)
-	//	{
-	//		if (*(*(str_old + i) + j) == '.') kol++;
-	//		if (kol > 20 && i == 0)
-	//		{
-	//			rewind(stdin);
-	//			i = 0;
-	//			break;
-	//		}
-	//	    if (kol > 20 && i > 0)
-	//		{
-	//			rewind(stdin);
-	//			i--;
-	//			break;
-	//		}
-	//	}
-	//}
 	printf_s("\n");
 
-
-
-	cmp_to_sort(str_old, n, m);
+	InsertSort(str_old, n, m);
 	puts("Sorted text by alphabet - \n");
 	for (int i = 0; i < n; i++)
 	{	
@@ -135,10 +89,9 @@ int main()
 	printf_s("\n");
 	for (int i = 0; i < n; i++)
 	{
-		if (*(str_old + i) == 0) break;
 		printf_s("Total salary on line №%d - %d \n", i + 1, atoi_sum(*(str_old + i), m));
-		num++;                               //счётчик количества сумм зарплат для выделения памяти под массив
-	}
+		num++;                               //счётчик количества сумм зарплат для выделения памяти под массив для сортировки
+	}                                        //по сумме зарплат 
 	printf_s("\n");
 	ms = (int*)malloc(num * sizeof(int));   //выделение памяти пол дополнительный массив
 	if (!ms)                                //проверка выделения памяти
@@ -149,7 +102,6 @@ int main()
 	//цикл заполнения массива
 	for (int i = 0; i < n; i++)
 	{
-		if (*(str_old + i) == 0) break;
 		*(ms + i) = atoi_sum(*(str_old + i), m);
 	}
 	
@@ -177,56 +129,51 @@ int get_str(char* st, int num)
 	{
 		*(st + i++) = c;
 		if (c == '.') kol++;
-	}
-	*(st + i) = '\0';
+		else if ((*(st + i - 2) >= '0' && *(st + i - 2) <= '9') && (*(st + i - 1) == ' ' || *(st + i - 1) == '\n')) kol++; //если введена цифра
+		                                                                                                               //а после неё пробел, то
+	}                                                                                                                  //то найдена зарплата
+	*(st + i) = '\0';                                                                                  
 	return kol; 
 }
-
-char* str_cpy(char* st_new, char* st_old)
+//функция расстановки сим-ов в строках, если встретились лишние пробелы, чтобы их не сортировать с буквами
+void skipSpace(char** st, char * temp, int j, int i, int* symb, int* lett)
 {
-	while ((*st_new++ = *st_old++) != '\0');
-
-	return st_new;
-}
-
-void InsertSort(char** st, int j1, int i1)
-{
-	int i, j, temp;
-
-	for (i = i1 + 1; i > 0; i--)
+	while (*(*(st + j) + *symb) != ' ' && *(temp + (*symb)) == ' ')
 	{
-		j = i - 1;
-		temp = *(st + i);              //сохраняем указатель на строку, которую отправляем в функцию
-		while (j >= 0 && (*(*(st + j) + j1) - *(*(st + i) + j1)) > 0)
-		{
-
-			*(st + j-- + 1) = *(st + j);
-			j1 = 0;                     //устанавливаем j в начало строки для нового прохода по их элементам
-			while (j >= 0 && *(*(st + j) + j1) == *(*(st + i - 1) + j1))  //цикл поиска одинаковых элементов в строках
-			{
-				j1++;
-			}
-		}
-		*(st + j + 1) = temp;
+		*lett = *symb; (*symb)++;
+	}
+	while (*(*(st + j) + *symb) == ' ' && *(temp + (*symb)) != ' ')
+	{
+		*lett = *symb; (*symb)++;
 	}
 }
 
-void cmp_to_sort(char** st, int s_str, int s_stl)
+void InsertSort(char** st, int s_str, int str_size)
 {
-	for (int i = 0; i < s_str - 1; i++)
+	int i, j, symb = 0, lett = 0;
+	char *temp, temp_s;
+
+	for (i = 1; i < s_str; i++)
 	{
-		for (int j = 0; j < s_stl - 1; j++)
+		j = i - 1;
+		temp = *(st + i);              //сохраняем указатель на строку
+		while (*(*(st + j) + symb) == *(*(st + i) + symb)) symb++;  //пропуск одинаковых символов
+		if (*(*(st + j) + symb) >= '0' && *(*(st + j) + symb) <= '9') symb++; //достигнуты цифры в строке
+		if (*(*(st + i) + symb) >= '0' && *(*(st + i) + symb) <= '9') symb++; //достигнуты цифры в другой строке
+		lett = symb;
+		skipSpace(st, temp, j, i, &symb, &lett);   //пропуск пробелов в одной из строк
+		while (j >= 0 && (*(*(st + j) + lett) - *(temp + symb) > 0))
 		{
-			if (*(*(st + i) + j) == *(*(st + i + 1) + j))
-			{
-				continue;
-			}
-			else
-			{
-				InsertSort(st, j, i);
-				break;
+			*(st + j-- + 1) = *(st + j);
+			symb = 0; lett = 0;                    //устанавливаемся в начало строки для нового прохода по их элементам
+			while (j >= 0 && *(*(st + j) + lett) == *(temp + symb))     //цикл поиска одинаковых элементов в строках
+			{                                                           //т.к. начинают сравниваються строки, в которых
+				symb++; lett++;                                         //символы под установленным номером, могут быть уже не одинаковыми
+				skipSpace(st, temp, j, i, &symb, &lett);                //пропуск пробелов в одной из строк
 			}
 		}
+		*(st + j + 1) = temp; //запись в освободившийся или в тот же элемент
+		symb = 0; lett = 0;
 	}
 }
 
@@ -242,18 +189,21 @@ int atoi_sum(char* st, int s_stl)
 		next = 0;
 		if (*(st + i) >= 'A' && *(st + i) <= 'z') continue; 
 		if (*(st + i) >= 'A' && *(st + i) <= 'я') continue;
-		if (*(st + i) == ' ') continue;
 		if (*(st + i) >= '0' && *(st + i) <= '9')
 		{
 			n = n * 10 + (*(st + i) - '0');
 		}
 		if (*(st + i) == '.') n = 0;      //обнуляем число, если оно обозначает номер месяца
-		if (*(st + i) == ';') next = 1;   //найдено число зарплаты за один из месяцев
+		if (*(st + i) == ';' || *(st + i) == ' ' || *(st + i) == '\0' || *(st + i) == '\n')
+		{
+			if (*(st + i - 1) >= '0' && *(st + i - 1) <= '9') next = 1;   //найдено число зарплаты за один из месяцев
+		}
 		if (next)
 		{
 			sum += n;
 			n = 0;                        //обнуление зарплаты для суммирования с зарплатой за другой месяц
 		}
+		if (*(st + i) == ' ') continue;
 		if (*(st + i) == '\0') break;     //прекращаем цикл, если достигнут нулевой символ
 	}
 
