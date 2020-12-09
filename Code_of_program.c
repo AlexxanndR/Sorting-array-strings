@@ -5,7 +5,8 @@
 #include <windows.h>
 #include <stdbool.h>
 
-void skipSpace(char**, char*, int, int, int*, int*);
+int get_str(char*, int);
+void skipSpaceRepeat(char**, char*, int, int, int*, int*);
 void InsertSort(char**, int, int);
 int  atoi_sum(char*, int);
 void SheikerSort(int*, char**, int);
@@ -60,19 +61,12 @@ int main()
 
 	for (int i = 0; i < n; i++)
 	{
-		if (kol > 20 && i == 1)           //если введена зарплата для более 20 месяцев и было введено 1-ое предложение
-		{                                 //то делаем повторный ввод
-			printf_s("\n");
-			puts("The number of months must be no more than 20. \n");
-			rewind(stdin);
-			i = 0;
-		}
 		printf_s("Enter the string #%d: ", i + 1);
 		kol = get_str(*(str_old + i), m);
-		if (kol > 20 && i > 0)            //если введена зарплата для более 20 месяцев и было введено не 1-ое предложение
+		if (kol > 12)                     //если введена зарплата для более 20 месяцев и было введено не 1-ое предложение
 		{                                 //то делаем повторный ввод этого предложения
 			printf_s("\n");
-			puts("The number of months must be no more than 20 \n");
+			puts("The number of months must be no more than 20. \n");
 			rewind(stdin);
 			i--;
 		}
@@ -104,7 +98,6 @@ int main()
 	{
 		*(ms + i) = atoi_sum(*(str_old + i), m);
 	}
-	
 	SheikerSort(ms, str_old, num);
 	printf_s("Sorted text by salary - \n");
 	printf_s("\n");
@@ -112,12 +105,12 @@ int main()
 	{
 		printf_s("Line with total salary %d - %s \n", atoi_sum(*(str_old + i), m), *(str_old + i));
 	}
-
 	for (int i = 0; i < n; i++)
 	{
 		free(*(str_old + i));
 	}
 	free(str_old);
+	free(ms);
 	return 0;
 }
 
@@ -129,11 +122,12 @@ int get_str(char* st, int num)
 	while (--num > 0 && (c = getchar()) != EOF && c != '\n')
 	{
 		*(st + i++) = c;
-		if (c == '.') kol++;
-		else if ((*(st + i - 2) >= '0' && *(st + i - 2) <= '9') && (*(st + i - 1) == ' ' || *(st + i - 1) == '\n')) kol++; //если введена цифра
-		                                                                                                               //а после неё пробел, то
-	}                                                                                                                  //то найдена зарплата
-	*(st + i) = '\0';                                                                                  
+		if (c == '.' || c == '-') kol++;               //если введён номер месяца, то считаем кол-во зарплат по месяцам по символу, который гоаорит о вводе этого номер
+		else if ((*(st + i - 2) >= '0' && *(st + i - 2) <= '9') && (*(st + i - 1) >= 'А' && *(st + i - 1) <= 'я')) kol--; //встречена буква после зарплаты - уменьшаем счётчик
+		else if ((*(st + i - 2) >= '0' && *(st + i - 2) <= '9') && *(st + i - 1) == ' ') kol++; //если введена цифра, а после неё пробел                                                                         
+	}                                                                                           //то найдена зарплата
+	*(st + i) = '\0';         
+	if ((*(st + i - 1) >= '0' && *(st + i - 1) <= '9') && *(st + i) == '\0') kol++;  //проверка на запись числа перед нуль-символом, т.к. был выход из цикла
 	return kol; 
 }
 
@@ -141,6 +135,10 @@ int get_str(char* st, int num)
 //и пропуска повторяющихся символов слов
 void skipSpaceRepeat(char** st, char * temp, int j, int i, int* symb, int* lett)
 {
+	while (*(*(st + j) + *lett) == *(temp + *symb))            //пропуск одинаковых символов до проверки на наличие пробелов
+	{
+		(*symb)++; (*lett)++;
+	}
 	int for_while;        //переменная для запоминания значения symb
 	while (*(*(st + j) + *lett) != ' ' && *(temp + *symb) == ' ')  //пропуск пробелов
 	{
@@ -157,7 +155,7 @@ void skipSpaceRepeat(char** st, char * temp, int j, int i, int* symb, int* lett)
 			break;
 		}
 	}
-	while (*(*(st + j) + *lett) == *(temp + *symb))              //пропуск одинаковых символов
+	while (*(*(st + j) + *lett) == *(temp + *symb))             //пропуск одинаковых символов после пропусков пробелов
 	{
 		(*symb)++; (*lett)++;
 	}
@@ -172,9 +170,9 @@ void InsertSort(char** st, int s_str, int str_size)
 	{
 		j = i - 1;
 		temp = *(st + i);              //сохраняем указатель на строку
-		skipSpace(st, temp, j, i, &symb, &lett);                              //пропуск пробелов в одной из строк
-		if (*(*(st + j) + symb) >= '0' && *(*(st + j) + symb) <= '9') symb++; //достигнуты цифры в строке
-		if (*(*(st + i) + symb) >= '0' && *(*(st + i) + symb) <= '9') symb++; //достигнуты цифры в другой строке
+		skipSpaceRepeat(st, temp, j, i, &symb, &lett);                              //пропуск пробелов в одной из строк
+		while (*(*(st + j) + lett) >= '0' && *(*(st + j) + lett) <= '9') lett++;    //достигнуты цифры в одной строке
+		while (*(temp + symb) >= '0' && *(temp + symb) <= '9') symb++;              //достигнуты цифры в другой строке
 		while (j >= 0 && (*(*(st + j) + lett) - *(temp + symb) > 0))
 		{
 			*(st + j-- + 1) = *(st + j);
@@ -183,7 +181,7 @@ void InsertSort(char** st, int s_str, int str_size)
 			{                                                           //т.к. начинают сравниваються строки, в которых
 				symb++; lett++;                                         //символы под установленным номером, могут быть уже не одинаковыми
 			}
-			if (j >= 0) skipSpace(st, temp, j, i, &symb, &lett);                //пропуск пробелов в одной из строк
+			if (j >= 0) skipSpaceRepeat(st, temp, j, i, &symb, &lett);       //пропуск пробелов в одной из строк
 		}
 		*(st + j + 1) = temp; //запись в освободившийся или в тот же элемент
 		symb = 0; lett = 0;
@@ -218,11 +216,8 @@ int atoi_sum(char* st, int s_stl)
 		if (*(st + i) == ' ') continue;
 		if (*(st + i) == '\0') break;     //прекращаем цикл, если достигнут нулевой символ
 	}
-
 	return sum;
-	
 }
-
 //цикл сортировки строк строкового массива по сумме зарплат
 void SheikerSort(int* arr, char** st, int kol)
 {
